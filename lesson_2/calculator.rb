@@ -3,7 +3,7 @@
 # perform the operation on the two numbers
 # output the results
 
-def calculator (number1, number2, operation)
+def calculator(number1, number2, operation)
   case operation
   when "A"
     number1 + number2
@@ -12,13 +12,17 @@ def calculator (number1, number2, operation)
   when "M"
     number1 * number2
   when "D"
-    if number2 == 0
-      "Can't divide by zero."
-    else
-      number1.to_f / number2.to_f
-    end
+    divide_integers(number1, number2)
   else
     "Unknown operation. Giving up."
+  end
+end
+
+def divide_integers(number1, number2)
+  if number2.zero?
+    "Can't divide by zero."
+  else
+    number1.to_f / number2.to_f
   end
 end
 
