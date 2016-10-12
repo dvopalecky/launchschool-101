@@ -5,46 +5,64 @@
 # perform the operation on the two numbers
 # output the results
 
+LANGUANGE = 'cs'
+
+require 'yaml'
+
+MESSAGES = YAML.load_file('calculator_msg.yml')[LANGUANGE]
+if MESSAGES.nil?
+  prompt "Unknown language"
+  exit
+end
+
 def prompt(message)
-  puts "=> #{message}"
+  message.split("\n").each do |line|
+    puts "=> #{line}"
+  end
 end
 
 def calculator(number1, number2, operation)
   case operation
-  when "A"
+  when MESSAGES['operation_add_abr']
     number1 + number2
-  when "S"
+  when MESSAGES['operation_subtract_abr']
     number1 - number2
-  when "M"
+  when MESSAGES['operation_multiply_abr']
     number1 * number2
-  when "D"
+  when MESSAGES['operation_divide_abr']
     divide_integers(number1, number2)
   else
-    "Unknown operation. Giving up."
+    MESSAGES['unknown_operation']
   end
 end
 
 def calculation_message(number1, number2, operation)
-  hash = { "A" => "Adding", "S" => "Subtracting",
-           "M" => "Multiplying", "D" => "Dividing" }
+  hash = { MESSAGES['operation_add_abr'] => MESSAGES['operation_add_process'],
+           MESSAGES['operation_subtract_abr'] => MESSAGES['operation_subtract_process'],
+           MESSAGES['operation_multiply_abr'] => MESSAGES['operation_multiply_process'],
+           MESSAGES['operation_divide_abr'] => MESSAGES['operation_divide_process'] }
   message = hash[operation]
-  return "Unknown operation. Giving up." if message.nil?
+  return MESSAGES['unknown_operation'] if message.nil?
   "#{message} #{number1} and #{number2}."
 end
 
 def divide_integers(number1, number2)
   if number2.zero?
-    "Can't divide by zero."
+    MESSAGES['divide_by_zero']
   else
     number1.to_f / number2.to_f
   end
 end
 
+def integer?(input_str)
+  input_str.to_i.to_s == input_str
+end
+
 def valid_number?(number)
-  if number.nonzero?
+  if integer?(number)
     true
   else
-    prompt "You did not enter a valid number."
+    MESSAGES['invalid_number']
     false
   end
 end
@@ -53,19 +71,19 @@ def enter_integer(message)
   number = nil
   loop do
     prompt message
-    number = gets.chomp().to_i
+    number = gets.chomp()
     break if valid_number?(number)
   end
-  number
+  number.to_i
 end
 
 def enter_name
   name = ''
   loop do
-    prompt "What is your name?"
+    prompt MESSAGES['name?']
     name = gets.chomp()
     if name.empty?
-      prompt "Please enter a valid name"
+      prompt MESSAGES['invalid_name']
     else
       break
     end
@@ -74,39 +92,35 @@ def enter_name
 end
 
 def enter_operation
-  operation_prompt = <<-MSG
-    Enter operation:
-    add (A)
-    subtract (S)
-    multiply (M)
-    divide (D)
-  MSG
-  prompt operation_prompt
+  prompt MESSAGES['choose_operation']
   operation = ''
-  valid_operation = %w(A S M D)
+  valid_operation = [MESSAGES['operation_add_abr'],
+                     MESSAGES['operation_subtract_abr'],
+                     MESSAGES['operation_multiply_abr'],
+                     MESSAGES['operation_divide_abr']]
   loop do
     operation = gets.chomp().upcase
     if valid_operation.include?(operation)
       break
     else
-      prompt "Please enter valid operation: A, S, M or D."
+      prompt MESSAGES['invalid_operation']
     end
   end
   operation
 end
 
 # main
-prompt "Simple calculator"
+prompt MESSAGES['welcome']
 name = enter_name
-prompt "Hello #{name}"
+prompt "#{MESSAGES['hello']} #{name}"
 loop do
-  number1 = enter_integer("Enter first integer")
-  number2 = enter_integer("Enter second integer")
+  number1 = enter_integer(MESSAGES['enter_first'])
+  number2 = enter_integer(MESSAGES['enter_second'])
   operation = enter_operation
   prompt calculation_message(number1, number2, operation)
-  prompt "Result: #{calculator(number1, number2, operation)}"
-  prompt "Do you want to perform another calculation? Yes (Y), No (N)"
-  break unless gets.chomp().upcase == "Y"
+  prompt "#{MESSAGES['result']}: #{calculator(number1, number2, operation)}"
+  prompt MESSAGES['new_calculation?']
+  break unless gets.chomp().upcase == MESSAGES['yes_abr']
 end
 
-prompt "Bye #{name}!"
+prompt "#{MESSAGES['bye']} #{name}!"
