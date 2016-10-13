@@ -5,11 +5,11 @@
 # perform the operation on the two numbers
 # output the results
 
-LANGUANGE = 'cs'
+LANGUAGE = 'en'
 
 require 'yaml'
 
-MESSAGES = YAML.load_file('calculator_msg.yml')[LANGUANGE]
+MESSAGES = YAML.load_file('calculator_msg.yml')[LANGUAGE]
 if MESSAGES.nil?
   prompt "Unknown language"
   exit
@@ -62,7 +62,7 @@ def valid_number?(number)
   if integer?(number)
     true
   else
-    MESSAGES['invalid_number']
+    prompt MESSAGES['invalid_number']
     false
   end
 end
