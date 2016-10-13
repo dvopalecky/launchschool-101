@@ -8,29 +8,23 @@ def prompt(message)
 end
 
 def valid_positive_integer?(input_str)
-  if input_str.to_i.to_s == input_str
-    true
-  else
-    prompt "Please enter a valid positive integer."
-    false
-  end
+  input_str.to_i.to_s == input_str
 end
 
 def valid_nonnegative_float?(input_str)
-  if /\d/.match(input_str) && /^\d*\.?\d*$/.match(input_str)
-    true
-  else
-    prompt "Please enter a valid non-negative number."
-    false
-  end
+  /\d/.match(input_str) && /^\d*\.?\d*$/.match(input_str)
 end
 
 def enter_integer(message)
   number = nil
   loop do
     prompt message
-    number = gets.chomp()
-    break if valid_positive_integer?(number)
+    number = gets.chomp
+    if valid_positive_integer?(number)
+      break
+    else
+      prompt "Please enter a valid positive integer."
+    end
   end
   number.to_i
 end
@@ -39,8 +33,12 @@ def enter_float(message)
   number = nil
   loop do
     prompt message
-    number = gets.chomp()
-    break if valid_nonnegative_float?(number)
+    number = gets.chomp
+    if valid_nonnegative_float?(number)
+      break 
+    else
+      prompt "Please enter a valid non-negative number."
+    end
   end
   number.to_f
 end
@@ -54,8 +52,8 @@ end
 
 def format_float(input_float)
   # converts to string and only to 2 decimal places
-  out = format("%.2f", input_float)
-  before_and_after_decimal = out.split(DECIMAL_POINT) # [before, after]
+  formatted = format("%.2f", input_float)
+  before_and_after_decimal = formatted.split(DECIMAL_POINT) # [before, after]
   before_decimal = before_and_after_decimal[0].reverse.scan(/\d{1,3}/)
                                               .join(THOUSAND_SEPARATOR).reverse
   before_decimal + DECIMAL_POINT + before_and_after_decimal[1]
@@ -78,5 +76,5 @@ loop do
   prompt "Monthly payment ($)    : #{format_float(result)}"
   prompt ""
   prompt "Do you want to calculate again? (Y) for yes"
-  break unless gets.chomp().upcase == "Y"
+  break unless gets.chomp.upcase == "Y"
 end
