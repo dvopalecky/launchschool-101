@@ -9,16 +9,16 @@ LANGUAGE = 'en'
 
 require 'yaml'
 
-MESSAGES = YAML.load_file('calculator_msg.yml')[LANGUAGE]
-if MESSAGES.nil?
-  prompt "Unknown language"
-  exit
-end
-
 def prompt(message)
   message.split("\n").each do |line|
     puts "=> #{line}"
   end
+end
+
+MESSAGES = YAML.load_file('calculator_msg.yml')[LANGUAGE]
+if MESSAGES.nil?
+  prompt "Unknown language"
+  exit
 end
 
 def calculator(number1, number2, operation)
@@ -64,8 +64,9 @@ def valid_operation?(operation)
   valid_operation.include?(operation)
 end
 
-def enter_integer
+def enter_integer(message)
   loop do
+    prompt message
     number = gets.chomp()
     if valid_integer?(number)
       return number.to_i
@@ -116,10 +117,8 @@ prompt MESSAGES['welcome']
 name = enter_name
 prompt "#{MESSAGES['hello']} #{name}"
 loop do
-  prompt MESSAGES['enter_first']
-  number1 = enter_integer
-  prompt MESSAGES['enter_second']
-  number2 = enter_integer
+  number1 = enter_integer(MESSAGES['enter_first'])
+  number2 = enter_integer(MESSAGES['enter_second'])
   prompt MESSAGES['choose_operation']
   operation = enter_operation
   prompt calculation_message(number1, number2, operation)
