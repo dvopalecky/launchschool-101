@@ -23,24 +23,22 @@ end
 
 def calculator(number1, number2, operation)
   case operation
-  when MESSAGES['operation_add_abr']
-    number1 + number2
-  when MESSAGES['operation_subtract_abr']
-    number1 - number2
-  when MESSAGES['operation_multiply_abr']
-    number1 * number2
-  when MESSAGES['operation_divide_abr']
-    divide_integers(number1, number2)
-  else
-    MESSAGES['unknown_operation']
+  when MESSAGES['operation_add_abr'] then number1 + number2
+  when MESSAGES['operation_subtract_abr'] then number1 - number2
+  when MESSAGES['operation_multiply_abr'] then number1 * number2
+  when MESSAGES['operation_divide_abr'] then divide_integers(number1, number2)
+  else MESSAGES['unknown_operation']
   end
 end
 
 def calculation_message(number1, number2, operation)
   hash = { MESSAGES['operation_add_abr'] => MESSAGES['operation_add_process'],
-           MESSAGES['operation_subtract_abr'] => MESSAGES['operation_subtract_process'],
-           MESSAGES['operation_multiply_abr'] => MESSAGES['operation_multiply_process'],
-           MESSAGES['operation_divide_abr'] => MESSAGES['operation_divide_process'] }
+           MESSAGES['operation_subtract_abr'] =>
+             MESSAGES['operation_subtract_process'],
+           MESSAGES['operation_multiply_abr'] =>
+             MESSAGES['operation_multiply_process'],
+           MESSAGES['operation_divide_abr'] =>
+             MESSAGES['operation_divide_process'] }
   message = hash[operation]
   return MESSAGES['unknown_operation'] if message.nil?
   "#{message} #{number1} and #{number2}."
@@ -54,59 +52,63 @@ def divide_integers(number1, number2)
   end
 end
 
-def integer?(input_str)
+def valid_integer?(input_str)
   input_str.to_i.to_s == input_str
 end
 
-def valid_number?(number)
-  if integer?(number)
-    true
-  else
-    prompt MESSAGES['invalid_number']
-    false
-  end
+def valid_operation?(operation)
+  valid_operation = [MESSAGES['operation_add_abr'],
+                     MESSAGES['operation_subtract_abr'],
+                     MESSAGES['operation_multiply_abr'],
+                     MESSAGES['operation_divide_abr']]
+  valid_operation.include?(operation)
 end
 
-def enter_integer(message)
-  number = nil
+def enter_integer
   loop do
-    prompt message
     number = gets.chomp()
-    break if valid_number?(number)
+    if valid_integer?(number)
+      return number.to_i
+    else
+      prompt MESSAGES['invalid_number']
+    end
   end
-  number.to_i
 end
 
 def enter_name
-  name = ''
   loop do
     prompt MESSAGES['name?']
     name = gets.chomp()
     if name.empty?
       prompt MESSAGES['invalid_name']
     else
-      break
+      return name
     end
   end
-  name
 end
 
 def enter_operation
-  prompt MESSAGES['choose_operation']
-  operation = ''
-  valid_operation = [MESSAGES['operation_add_abr'],
-                     MESSAGES['operation_subtract_abr'],
-                     MESSAGES['operation_multiply_abr'],
-                     MESSAGES['operation_divide_abr']]
   loop do
     operation = gets.chomp().upcase
-    if valid_operation.include?(operation)
-      break
+    if valid_operation?(operation)
+      return operation
     else
       prompt MESSAGES['invalid_operation']
     end
   end
-  operation
+end
+
+def calculate_again?
+  loop do
+    answer = gets.chomp
+    if answer.casecmp(MESSAGES['yes_abr']).zero?
+      return true
+    elsif answer.casecmp(MESSAGES['no_abr']).zero?
+      return false
+    else
+      prompt MESSAGES['invalid_yes_no']
+    end
+  end
 end
 
 # main
@@ -114,13 +116,15 @@ prompt MESSAGES['welcome']
 name = enter_name
 prompt "#{MESSAGES['hello']} #{name}"
 loop do
-  number1 = enter_integer(MESSAGES['enter_first'])
-  number2 = enter_integer(MESSAGES['enter_second'])
+  prompt MESSAGES['enter_first']
+  number1 = enter_integer
+  prompt MESSAGES['enter_second']
+  number2 = enter_integer
+  prompt MESSAGES['choose_operation']
   operation = enter_operation
   prompt calculation_message(number1, number2, operation)
   prompt "#{MESSAGES['result']}: #{calculator(number1, number2, operation)}"
   prompt MESSAGES['new_calculation?']
-  break unless gets.chomp().upcase == MESSAGES['yes_abr']
+  break unless calculate_again?
 end
-
 prompt "#{MESSAGES['bye']} #{name}!"
