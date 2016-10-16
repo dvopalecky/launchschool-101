@@ -8,7 +8,7 @@ def prompt(message)
 end
 
 def valid_positive_integer?(input_str)
-  input_str.to_i.to_s == input_str && input_str.to_i > 0
+  input_str.to_i.to_s == input_str && input_str.to_i.positive?
 end
 
 def valid_nonnegative_float?(input_str)

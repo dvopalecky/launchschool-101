@@ -1,6 +1,9 @@
 # .rubocop.yml
 # for lesson_2 only
 
+AllCops:
+  TargetRubyVersion: 2.3
+
 Style/MethodCallParentheses:
   Enabled: false
   Description: Do not use parentheses for method calls with no arguments.
