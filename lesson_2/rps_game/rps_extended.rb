@@ -1,4 +1,4 @@
-# Rock, Paper, Scissors game
+# Rock, Paper, Scissors, Lizard, Spock game
 
 VALID_CHOICES = %w(r p s l k)
 FULLNAME_CHOICES = %w((R)ock (P)aper (S)cissors (L)izard Spoc(K))
@@ -38,14 +38,12 @@ def duel(player_choice, competitor_choice)
 end
 
 def play_again?
+  prompt "Do you want to play whole game again? (Y)es or (N)o"
   loop do
-    answer = gets.chomp
-    if answer.casecmp("y").zero?
-      return true
-    elsif answer.casecmp("n").zero?
-      return false
-    else
-      prompt "Please enter Y or N"
+    case gets.chomp
+    when "y", "Y" then return true
+    when "n", "N" then return false
+    else prompt "Please enter Y or N"
     end
   end
 end
@@ -56,38 +54,44 @@ def display_new_game
   prompt "Let's play on #{POINTS_TO_WIN} winning points"
 end
 
-def display_game_over(user_score, computer_score)
-  if computer_score > user_score
+def display_game_over(scores)
+  if scores[:computer] > scores[:user]
     prompt "\nGame over. Computer won!"
   else
     prompt "\nGame over. You won!"
   end
 end
 
+def display_results(choices, duel_result, scores)
+  clear_screen
+  prompt "You chose:      #{FULLNAME_CHOICES[choices[:user]]}"
+  prompt "Computer chose: #{FULLNAME_CHOICES[choices[:computer]]}"
+  prompt "Round result: #{DUEL_MSG[duel_result]}"
+  prompt "Overall score:      You: #{scores[:user]}"
+  prompt "               Computer: #{scores[:computer]}"
+end
+
+def update_scores!(scores, duel_result)
+  case duel_result
+  when 1 then scores[:user] += 1
+  when -1 then scores[:computer] += 1
+  end
+end
+
 # main
 loop do
   display_new_game
-  user_score = 0
-  computer_score = 0
+  scores = { user: 0, computer: 0 }
   loop do # single game loop
-    user_choice = enter_choice
-    computer_choice = VALID_CHOICES.index(VALID_CHOICES.sample)
-    duel_result = duel(user_choice, computer_choice)
-    if duel_result == 1 then user_score += 1
-    elsif duel_result == -1 then computer_score += 1
-    end
-
-    clear_screen
-    prompt "You chose:      #{FULLNAME_CHOICES[user_choice]}"
-    prompt "Computer chose: #{FULLNAME_CHOICES[computer_choice]}"
-    prompt "Round result: #{DUEL_MSG[duel_result]}"
-    prompt "Overall score:      You: #{user_score}"
-    prompt "               Computer: #{computer_score}"
-
-    break if user_score >= POINTS_TO_WIN || computer_score >= POINTS_TO_WIN
+    choices = {}
+    choices[:user] = enter_choice
+    choices[:computer] = VALID_CHOICES.index(VALID_CHOICES.sample)
+    duel_result = duel(choices[:user], choices[:computer])
+    update_scores!(scores, duel_result)
+    display_results(choices, duel_result, scores)
+    break if scores.value?(POINTS_TO_WIN)
   end
-  display_game_over(user_score, computer_score)
-  prompt "Do you want to play whole game again? (Y)es or (N)o"
+  display_game_over(scores)
   break unless play_again?
 end
 prompt "Thank you for playing."
