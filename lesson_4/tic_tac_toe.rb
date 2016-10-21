@@ -6,6 +6,7 @@ PLAYER_MARKER = "X".freeze
 COMPUTER_MARKER = "O".freeze
 DASHED_ROW = "+-----" * 3 + "+"
 EMPTY_ROW = "|     " * 3 + "|"
+POINTS_TO_WIN = 3
 
 def clear_screen
   system('clear') || system('cls')
@@ -15,8 +16,10 @@ def prompt(message)
   puts "=> " + message
 end
 
-def display(board)
+def display(board, scores)
   clear_screen
+  puts "Overall score: #{scores['player']} : #{scores['computer']} " \
+       "(Player : Computer)"
   puts "You are #{PLAYER_MARKER}, computer is #{COMPUTER_MARKER}"
   puts DASHED_ROW
   board.each do |row|
@@ -80,9 +83,9 @@ end
 
 def check_winner(board)
   if winner?(board, COMPUTER_MARKER)
-    return "Computer"
+    return "computer"
   elsif winner?(board, PLAYER_MARKER)
-    return "Player"
+    return "player"
   end
   false
 end
@@ -104,31 +107,52 @@ def winner?(board, marker)
   false
 end
 
-def game_over?(board)
+def round_over?(board)
   check_winner(board) || full?(board)
+end
+
+def update_scores!(scores, duel_result)
+  case duel_result
+  when 1 then scores[:user] += 1
+  when -1 then scores[:computer] += 1
+  end
+end
+
+def display_round_results(winner, scores)
+  if winner
+    prompt winner.capitalize + " won the round!"
+  else
+    prompt "It's a tie."
+  end
+  prompt "Overall score:   Player: #{scores['player']}"
+  prompt "               Computer: #{scores['computer']}"
 end
 
 # main
 
 loop do
-  board = [[INITIAL_MARKER, INITIAL_MARKER, INITIAL_MARKER],
-           [INITIAL_MARKER, INITIAL_MARKER, INITIAL_MARKER],
-           [INITIAL_MARKER, INITIAL_MARKER, INITIAL_MARKER]]
+  scores = { "player" => 0, "computer" => 0 }
   loop do
-    display(board)
-    player_choose_square(board)
-    break if game_over?(board)
-    computer_choose_square(board)
-    break if game_over?(board)
+    board = [[INITIAL_MARKER, INITIAL_MARKER, INITIAL_MARKER],
+             [INITIAL_MARKER, INITIAL_MARKER, INITIAL_MARKER],
+             [INITIAL_MARKER, INITIAL_MARKER, INITIAL_MARKER]]
+    loop do
+      display(board, scores)
+      player_choose_square(board)
+      break if round_over?(board)
+      computer_choose_square(board)
+      break if round_over?(board)
+    end
+    display(board, scores)
+    prompt "Round over"
+    winner = check_winner(board)
+    scores[winner] += 1 if winner
+    display_round_results(winner, scores)
+    break if scores.value?(POINTS_TO_WIN)
+    prompt "Press enter to start next round"
+    gets
   end
-  display(board)
-  prompt "Game over"
-  winner = check_winner(board)
-  if winner
-    prompt winner + " won!"
-  else
-    prompt "It's a tie."
-  end
+  prompt "Game over."
   break unless play_again?
 end
 prompt "Thanks for playing"
