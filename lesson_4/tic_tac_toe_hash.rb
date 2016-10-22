@@ -48,12 +48,12 @@ end
 
 def player_choose_square(board)
   if empty_squares(board).size == 1
-    edit!(board, PLAYER_MARKER, empty_squares(board).first)
+    mark!(board, PLAYER_MARKER, empty_squares(board).first)
   else
     loop do
       prompt "Enter square (1 ... 9)"
       answer = enter_value_in_range("1".."9").to_i
-      break if edit!(board, PLAYER_MARKER, answer)
+      break if mark!(board, PLAYER_MARKER, answer)
       prompt "Square is already filled"
     end
   end
@@ -61,11 +61,10 @@ end
 
 def find_winning_square(board, offensive_marker)
   LINES.each do |line| # try to win in 1 move
-    if count_markers_on_line(board, line, offensive_marker) == 2
-      selected = board.select { |k, v| line.include?(k) && v == INITIAL_MARKER }
-      square = selected.keys.first
-      return square unless square.nil?
-    end
+    next unless count_markers_on_line(board, line, offensive_marker) == 2
+    selected = board.select { |k, v| line.include?(k) && v == INITIAL_MARKER }
+    square = selected.keys.first
+    return square unless square.nil?
   end
   nil
 end
@@ -75,18 +74,18 @@ def computer_choose_square(board)
   square = find_winning_square(board, PLAYER_MARKER) if !square # defense
   square = 5 if empty_squares(board).include?(5)
   square = empty_squares(board).sample if !square # chose random
-  edit!(board, COMPUTER_MARKER, square)
+  mark!(board, COMPUTER_MARKER, square)
 end
 
 def count_markers_on_line(board, line, marker)
-  [board[line[0]], board[line[1]], board[line[2]]].count(marker)
+  board.values_at(*line).count(marker)
 end
 
 def empty_squares(board)
   board.select { |_, v| v == INITIAL_MARKER }.keys
 end
 
-def edit!(board, input, position)
+def mark!(board, input, position)
   if board[position] == INITIAL_MARKER
     board[position] = input
   end
@@ -114,10 +113,7 @@ def check_winner(board)
 end
 
 def winner?(board, marker)
-  LINES.each do |line|
-    return true if count_markers_on_line(board, line, marker) == 3
-  end
-  false
+  LINES.any? { |line| count_markers_on_line(board, line, marker) == 3 }
 end
 
 def round_over?(board)
@@ -154,24 +150,37 @@ def alternate_player(current_player)
   current_player == "player" ? "computer" : "player"
 end
 
+def initialize_board
+  board = {}
+  9.times { |i| board[i + 1] = INITIAL_MARKER }
+  board
+end
+
+def play_round(who_starts, scores)
+  current_player = who_starts
+  board = initialize_board
+  loop do
+    display(board, scores) if current_player == "player"
+    choose_square!(board, current_player)
+    current_player = alternate_player(current_player)
+    break if round_over?(board)
+  end
+  display(board, scores)
+  prompt "Round over"
+  check_winner(board)
+end
+
+def update_scores!(scores, winner)
+  scores[winner] += 1 if winner
+end
+
 # main
 loop do # game
   scores = { "player" => 0, "computer" => 0 }
   who_starts = PLAYERS.sample
   loop do # round
-    current_player = who_starts
-    board = {}
-    9.times { |i| board[i + 1] = INITIAL_MARKER }
-    loop do
-      display(board, scores) if current_player == "player"
-      choose_square!(board, current_player)
-      current_player = alternate_player(current_player)
-      break if round_over?(board)
-    end
-    display(board, scores)
-    prompt "Round over"
-    winner = check_winner(board)
-    scores[winner] += 1 if winner
+    winner = play_round(who_starts, scores)
+    update_scores!(scores, winner)
     who_starts = who_starts_next_round(who_starts, winner)
     display_round_results(winner, scores)
     break if scores.value?(POINTS_TO_WIN)
