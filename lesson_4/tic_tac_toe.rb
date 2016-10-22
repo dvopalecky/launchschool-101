@@ -111,13 +111,6 @@ def round_over?(board)
   check_winner(board) || full?(board)
 end
 
-def update_scores!(scores, duel_result)
-  case duel_result
-  when 1 then scores[:user] += 1
-  when -1 then scores[:computer] += 1
-  end
-end
-
 def display_round_results(winner, scores)
   if winner
     prompt winner.capitalize + " won the round!"
