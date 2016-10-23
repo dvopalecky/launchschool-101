@@ -174,6 +174,10 @@ def update_scores!(scores, winner)
   scores[winner] += 1 if winner
 end
 
+def game_over?(scores)
+  scores.value?(POINTS_TO_WIN)
+end
+
 # main
 loop do # game
   scores = { "player" => 0, "computer" => 0 }
@@ -183,7 +187,7 @@ loop do # game
     update_scores!(scores, winner)
     who_starts = who_starts_next_round(who_starts, winner)
     display_round_results(winner, scores)
-    break if scores.value?(POINTS_TO_WIN)
+    break if game_over?(scores)
     prompt "Press enter to start next round"
     gets
   end
