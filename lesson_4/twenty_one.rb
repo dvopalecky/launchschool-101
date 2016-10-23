@@ -1,14 +1,17 @@
-CARD_NAMES = %w(2 3 4 5 6 7 8 9 10 jack queen king ace).freeze
+# Twenty-one game
+# Credits: card ascii taken from hjw from http://ascii.co.uk/art/cards 
+CARD_NAMES = %w(2 3 4 5 6 7 8 9 X J Q K A).freeze
 CARD_SUITS = %w(hearts diamonds clubs spades).freeze
 CARD_VALUES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, :ace].freeze
-
-def clear_screen
-  system('clear') || system('cls')
-end
-
-def prompt(message)
-  puts "=> " + message
-end
+CARD_ASCII = [".------. .------. .------. .------. .------.",
+              "|A_  _ | |A /\\  | |A _   | |A .   | |A     | ",
+              "|( \\/ )| | /  \\ | | ( )  | | / \\  | |      | ",
+              "| \\  / | | \\  / | |(_x_) | |(_,_) | |      | ",
+              "|  \\/ A| |  \\/ A| |  Y  A| |  I  A| |     A| ",
+              "`------' `------' `------' `------' `------' "].freeze
+POINTS_TO_WIN = 3
+BUSTED_THRESHOLD = 21
+DEALER_THRESHOLD = 17
 
 def initialize_card_db
   # card_db is hash with key = 0..51 and where
@@ -21,7 +24,107 @@ def initialize_card_db
       card_id += 1
     end
   end
+  card_db[:hidden] = { suit: "hidden", name: "?", value: 0 }
   card_db
+end
+
+CARD_DB = initialize_card_db
+
+def clear_screen
+  system('clear') || system('cls')
+end
+
+def prompt(message = "")
+  puts "=> " + message
+end
+
+def add_spaces(string, total_length)
+  nb_spaces = [0, total_length - string.size].max
+  string + " " * nb_spaces
+end
+
+def display_welcome
+  clear_screen
+  prompt "Welcome to Game of #{BUSTED_THRESHOLD}"
+  prompt "Let's play to #{POINTS_TO_WIN} winning points"
+  prompt "Press enter to start"
+  gets
+end
+
+def display_scores_cards_message(scores, holders, message, round_over = false)
+  clear_screen
+  display_scores(scores)
+  display_cards(holders, round_over)
+  prompt "Last action(s): #{message}" if message
+end
+
+def display_scores(scores)
+  prompt "Overall score: #{scores[:player]} : #{scores[:dealer]} " \
+       "(Player : Dealer)"
+end
+
+def display_cards(holders, round_over = false)
+  prompt "Player cards: " + display_total(holders[:player])
+  display_cards_ascii(holders[:player])
+  if round_over
+    prompt "Dealer cards: " + display_total(holders[:dealer])
+    display_cards_ascii(holders[:dealer])
+  else
+    prompt "Dealer cards: (Total: Unknown)"
+    display_cards_ascii([holders[:dealer].first, :hidden])
+  end
+end
+
+def display_total(holder)
+  total = total(holder)
+  "(Total: #{total}#{' BUSTED' if total > BUSTED_THRESHOLD})"
+end
+
+def display_round_results(result)
+  prompt
+  prompt "Round Results: " +
+         case result
+         when :player_busted then "You busted. You LOOSE."
+         when :dealer_busted then "You WIN. Dealer busted."
+         when :player then "You WIN. Your total is higher."
+         when :dealer then "You LOOSE. Dealer's total is higher."
+         when :tie then "It's a TIE."
+         end
+  prompt
+end
+
+def display_game_over(scores)
+  game_result = scores[:player] > scores[:dealer] ? "You won :)" : "You lost :("
+  prompt "Game over. " + game_result
+end
+
+def single_card_ascii(card_id)
+  offset = case CARD_DB[card_id][:suit]
+           when "hearts" then 0
+           when "diamonds" then 9
+           when "clubs" then 18
+           when "spades" then 27
+           when "hidden" then 36
+           end
+  single_card_ascii = CARD_ASCII.map { |v| v[offset, 9] }.join("\n")
+  single_card_ascii.gsub!("A", CARD_DB[card_id][:name])
+end
+
+def append_ascii_card(str1, str2)
+  str1_lines = str1.split("\n")
+  str2_lines = str2.split("\n")
+  str1_lines.each_with_index do |line, index|
+    line << str2_lines[index]
+  end
+  str1_lines.join("\n")
+end
+
+def display_cards_ascii(cards_ids)
+  output = " \n" * 6
+  cards_ids.each do |card_id|
+    output = append_ascii_card(output, single_card_ascii(card_id))
+  end
+  puts output
 end
 
 def initialize_holders
@@ -31,19 +134,6 @@ def initialize_holders
   holders
 end
 
-def show_hand(holders, holder)
-  holders[holder]
-end
-
-def remaining_cards(holders)
-  holders[:deck]
-end
-
-def draw_card!(holders, who_draws)
-  card_id = holders[:deck].pop
-  holders[who_draws].push(card_id)
-end
-
 def deal_initial_cards!(holders)
   2.times do
     draw_card!(holders, :player)
@@ -51,69 +141,34 @@ def deal_initial_cards!(holders)
   end
 end
 
-def add_spaces(string, total_length)
-  nb_spaces = [0, total_length - string.size].max
-  string + " " * nb_spaces
+def draw_card!(holders, who_draws)
+  card_id = holders[:deck].pop
+  holders[who_draws].push(card_id)
 end
 
-def display_card(card_id, card_db)
-  info = card_db[card_id]
-  value = info[:value]
-  value = "1 or 11" if value == :ace
-  prompt "  #{add_spaces(info[:name].capitalize, 5)} of "\
-       "#{add_spaces(info[:suit].capitalize, 8)} | Value: #{value}"
-end
-
-def display_cards(holders, card_db, game_over = false)
-  clear_screen
-  prompt "Player cards:"
-  holders[:player].each { |id| display_card(id, card_db) }
-  prompt "Dealer cards:"
-  if game_over
-    holders[:dealer].each { |id| display_card(id, card_db) }
-  else
-    display_card(holders[:dealer].first, card_db)
-    prompt "  ** Hidden card **"
-  end
-end
-
-def display_cards_value(value, name)
-  prompt "Value of #{name}'s cards: #{value}#{' BUSTED' if value > 21}"
-end
-
-def display_round_results(values, dealer_drew_count)
-  display_cards_value(values[:player], "player")
-  display_cards_value(values[:dealer], "dealer")
-  if values[:player]
-    prompt "Busted. You LOOSE."
-  else
-    prompt "You stayed. Dealer drew #{dealer_drew_count} extra card"\
-           "#{'s' if dealer_drew_count == 1}."
-    if values[:player] > values[:dealer]
-      prompt "You WIN. Player's cards' value is higher."
-    elsif values[:dealer] > 21
-      prompt "You WIN. Dealer busted."
-    elsif values[:player] == values[:dealer]
-      prompt "It's a TIE."
-    else
-      prompt "You LOOSE. Dealer's cards' value is higher."
-    end
-  end
-  prompt "Round over."
-end
-
-def values(holders, card_db)
+def totals(holders)
   hash = {}
-  hash[:player] = hand_value(:player, holders, card_db)
-  hash[:dealer] = hand_value(:dealer, holders, card_db)
+  hash[:player] = total(holders[:player])
+  hash[:dealer] = total(holders[:dealer])
   hash
 end
 
-def hand_value(holder, holders, card_db)
+def play_again?
+  prompt "Do you want to play whole game again? (Y)es or (N)o"
+  loop do
+    case gets.chomp
+    when "y", "Y" then return true
+    when "n", "N" then return false
+    else prompt "Please enter Y or N"
+    end
+  end
+end
+
+def total(holder)
   sum = 0
   nb_aces = 0
-  holders[holder].each do |card_id|
-    value = card_db[card_id][:value]
+  holder.each do |card_id|
+    value = CARD_DB[card_id][:value]
     if value == :ace
       value = 1
       nb_aces += 1
@@ -127,8 +182,8 @@ def hand_value(holder, holders, card_db)
   sum
 end
 
-def busted?(holder, holders, card_db)
-  hand_value(holder, holders, card_db) > 21
+def busted?(holder)
+  total(holder) > BUSTED_THRESHOLD
 end
 
 def enter_hit_or_stay
@@ -139,30 +194,64 @@ def enter_hit_or_stay
   end
 end
 
-def dealers_turn!(holders, card_db)
-  while hand_value(:dealer, holders, card_db) < 17
+def dealers_turn!(holders)
+  while total(holders[:dealer]) < DEALER_THRESHOLD
     draw_card!(holders, :dealer)
   end
 end
 
-# main
-card_db = initialize_card_db
-holders = initialize_holders
-deal_initial_cards!(holders)
-
-loop do # round loop
-  display_cards(holders, card_db)
-  break if busted?(:player, holders, card_db)
-  p hit_or_stay = enter_hit_or_stay
-  if hit_or_stay == "s"
-    dealers_turn!(holders, card_db)
-    break
+def detect_result(holders)
+  totals = totals(holders)
+  if totals[:player] > BUSTED_THRESHOLD
+    :player_busted
+  elsif totals[:dealer] > BUSTED_THRESHOLD
+    :dealer_busted
+  elsif totals[:player] > totals[:dealer]
+    :player
+  elsif totals[:player] == totals[:dealer]
+    :tie
+  else
+    :dealer
   end
-  prompt "Hitting..."
-  draw_card!(holders, :player)
 end
 
-display_cards(holders, card_db, true)
-values = values(holders, card_db)
-dealer_drew_count = holders[:dealer].count - 2
-display_round_results(values, dealer_drew_count)
+def update_scores!(scores, result)
+  case result
+  when :player_busted, :dealer then scores[:dealer] += 1
+  when :dealer_busted, :player then scores[:player] += 1
+  end
+end
+
+# main
+display_welcome
+loop do # game loop
+  scores = { player: 0, dealer: 0 }
+  loop do
+    holders = initialize_holders
+    deal_initial_cards!(holders)
+    message = nil
+    loop do # inner round loop
+      display_scores_cards_message(scores, holders, message)
+      break if busted?(holders[:player])
+      if enter_hit_or_stay == "s"
+        dealers_turn!(holders)
+        dealer_drew_count = holders[:dealer].count - 2
+        message = "You stayed. Dealer drew #{dealer_drew_count} extra card"\
+                  "#{'s' unless dealer_drew_count == 1}."
+        break
+      end
+      draw_card!(holders, :player)
+      message = "You hitted."
+    end
+    round_result = detect_result(holders)
+    update_scores!(scores, round_result)
+    display_scores_cards_message(scores, holders, message, true)
+    display_round_results(round_result)
+    break if scores.value?(POINTS_TO_WIN)
+    prompt "Press enter to start next round"
+    gets
+  end
+  display_game_over(scores)
+  break unless play_again?
+end
+prompt "Thanks for playing"
