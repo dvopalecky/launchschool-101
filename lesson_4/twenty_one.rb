@@ -1,14 +1,44 @@
 # Twenty-one game
-# Credits: card ascii taken from hjw from http://ascii.co.uk/art/cards 
+# Credits: card ascii taken from hjw from http://ascii.co.uk/art/cards
 CARD_NAMES = %w(2 3 4 5 6 7 8 9 X J Q K A).freeze
 CARD_SUITS = %w(hearts diamonds clubs spades).freeze
 CARD_VALUES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, :ace].freeze
-CARD_ASCII = [".------. .------. .------. .------. .------.",
-              "|A_  _ | |A /\\  | |A _   | |A .   | |A     | ",
-              "|( \\/ )| | /  \\ | | ( )  | | / \\  | |      | ",
-              "| \\  / | | \\  / | |(_x_) | |(_,_) | |      | ",
-              "|  \\/ A| |  \\/ A| |  Y  A| |  I  A| |     A| ",
-              "`------' `------' `------' `------' `------' "].freeze
+CARD_ASCII = { hearts:
+               ['.------. ',
+                '|A_  _ | ',
+                '|( \/ )| ',
+                '| \  / | ',
+                '|  \/ A| ',
+                '`------\' '],
+               diamonds:
+               ['.------. ',
+                '|A /\  | ',
+                '| /  \ | ',
+                '| \  / | ',
+                '|  \/ A| ',
+                '`------\' '],
+               clubs:
+               ['.------. ',
+                '|A _   | ',
+                '| ( )  | ',
+                '|(_x_) | ',
+                '|  Y  A| ',
+                '`------\' '],
+               spades:
+               ['.------. ',
+                '|A .   | ',
+                '| / \  | ',
+                '|(_,_) | ',
+                '|  I  A| ',
+                '`------\' '],
+               hidden:
+               ['.------. ',
+                '|A     | ',
+                '|      | ',
+                '|      | ',
+                '|     A| ',
+                '`------\' '] }.freeze
+
 POINTS_TO_WIN = 3
 BUSTED_THRESHOLD = 21
 DEALER_THRESHOLD = 17
@@ -99,15 +129,9 @@ def display_game_over(scores)
 end
 
 def single_card_ascii(card_id)
-  offset = case CARD_DB[card_id][:suit]
-           when "hearts" then 0
-           when "diamonds" then 9
-           when "clubs" then 18
-           when "spades" then 27
-           when "hidden" then 36
-           end
-  single_card_ascii = CARD_ASCII.map { |v| v[offset, 9] }.join("\n")
-  single_card_ascii.gsub!("A", CARD_DB[card_id][:name])
+  suit = CARD_DB[card_id][:suit].to_sym
+  card_ascii = CARD_ASCII[suit].join("\n")
+  card_ascii.gsub!("A", CARD_DB[card_id][:name])
 end
 
 def append_ascii_card(str1, str2)
@@ -128,10 +152,11 @@ def display_cards_ascii(cards_ids)
 end
 
 def initialize_holders
-  holders = { deck: [], player: [], dealer: [] }
-  52.times { |i| holders[:deck].push(i) }
-  holders[:deck].shuffle!
-  holders
+  {
+    deck: (0..51).to_a.shuffle,
+    player: [],
+    dealer: []
+  }
 end
 
 def deal_initial_cards!(holders)
@@ -147,10 +172,10 @@ def draw_card!(holders, who_draws)
 end
 
 def totals(holders)
-  hash = {}
-  hash[:player] = total(holders[:player])
-  hash[:dealer] = total(holders[:dealer])
-  hash
+  {
+    player: total(holders[:player]),
+    dealer: total(holders[:dealer])
+  }
 end
 
 def play_again?
