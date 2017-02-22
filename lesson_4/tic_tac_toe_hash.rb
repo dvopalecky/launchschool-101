@@ -72,7 +72,7 @@ end
 def computer_choose_square(board)
   square = find_winning_square(board, COMPUTER_MARKER) # offense
   square = find_winning_square(board, PLAYER_MARKER) if !square # defense
-  square = 5 if empty_squares(board).include?(5)
+  square = 5 if !square && empty_squares(board).include?(5)
   square = empty_squares(board).sample if !square # chose random
   mark!(board, COMPUTER_MARKER, square)
 end
